@@ -1,4 +1,4 @@
-const async = require('hbs/lib/async');
+
 var db = require('../config/connection')
 var collection = require('../config/collections')
 
