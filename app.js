@@ -12,7 +12,7 @@ var fileUpload = require('express-fileupload')
 var db = require('./config/connection');
 const { Console } = require('console');
 var app = express();
-
+var session = require('express-session')
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
@@ -22,6 +22,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(session({secret:"Key",cookie:{maxAge:60000}}))
 app.use(fileUpload())
 
 db.connect((err)=>{
