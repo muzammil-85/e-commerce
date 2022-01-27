@@ -19,6 +19,7 @@ router.get('/', async function(req, res, next) {
   let cartCount=null
   if(req.session.user){
     cartCount = await userHelpers.getCartCount(req.session.user._id)
+    console.log("cartCount="+cartCount);
   }
   productHelpers.getAllProducts().then((products)=>{
     res.render('user/view-products',{products,user,cartCount});

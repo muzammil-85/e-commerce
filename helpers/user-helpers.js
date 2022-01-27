@@ -3,7 +3,7 @@ var collection = require('../config/collections')
 const bcrypt = require('bcrypt')
 var objectId = require('mongodb').ObjectId
 const async = require('hbs/lib/async')
-const { CART_COLLECTION } = require('../config/collections')
+
 
 module.exports={
     doSignup:(userData)=>{
@@ -46,19 +46,21 @@ module.exports={
         quantity:1
       }
         return new Promise(async(resolve,reject)=>{
+            console.log("REACHED AT USERCART");
             let userCart = await db.get().collection(collection.CART_COLLECTION).findOne({user:objectId(userId)})
-           
-            
+            console.log(userCart);
             if(userCart){
-              let proExist = userCart.products.findIndex(product=> product.item==proId)
-              
+              let proExist = await userCart.products.findIndex((products)=> {
+                return proId == products.item
+              })
+              console.log(proExist);
               if(proExist!=-1){
                 db.get().collection(collection.CART_COLLECTION).updateOne({'products.item':objectId(proId)},
                 {
                   $inc:{'products.$.quantity':1}
                 }
                 ).then(()=>{
-                  resolve( )
+                  resolve()
                 })
               }else{
               db.get().collection(collection.CART_COLLECTION)
@@ -71,12 +73,18 @@ module.exports={
               ).then((response)=>{
                   resolve()
               })}
-            }else{
+            }
+            
+            
+            
+            
+            
+            else{
                 let cartObj = {
                     user:objectId(userId),
                     products:[proObj]
                 }
-                db.get().collection(collection.CART_COLLECTION).insertOne(cartObj).then((req,res)=>{
+                db.get().collection(collection.CART_COLLECTION).insertOne(cartObj).then((response)=>{
                     resolve()
                 })
             }
@@ -88,6 +96,9 @@ module.exports={
           let cartItems = await db.get().collection(collection.CART_COLLECTION).aggregate([
             {
               $match:{user:objectId(userId)}
+          },
+          {
+              $unwind:'$products'
           },
           {
             $project:{
@@ -102,25 +113,10 @@ module.exports={
               foreignField:'_id',
               as:'product'
             }
-          },
-            // {
-            //   $lookup:{
-            //     from:collection.PRODUCT_COLLECTION,
-            //     let:{prodList:'$products'},
-            //     pipeline:[
-            //       {
-            //         $match:{
-            //           $expr:{
-            //             $in:['$_id',"$$prodList"]
-            //           },
-            //         },
-            //       },
-            //     ],
-            //     as:'cartItems'
-            //   }
-            // }
+          }
           ]).toArray()
           console.log("cartitems");
+          console.log(cartItems);
           resolve(cartItems)
           
         })
