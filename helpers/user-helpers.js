@@ -3,6 +3,7 @@ var collection = require('../config/collections')
 const bcrypt = require('bcrypt')
 var objectId = require('mongodb').ObjectId
 const async = require('hbs/lib/async')
+const { response } = require('express')
 
 
 module.exports={
@@ -46,16 +47,17 @@ module.exports={
         quantity:1
       }
         return new Promise(async(resolve,reject)=>{
-            console.log("REACHED AT USERCART");
+            
             let userCart = await db.get().collection(collection.CART_COLLECTION).findOne({user:objectId(userId)})
-            console.log(userCart);
+            
             if(userCart){
               let proExist = await userCart.products.findIndex((products)=> {
                 return proId == products.item
               })
-              console.log(proExist);
+              
               if(proExist!=-1){
-                db.get().collection(collection.CART_COLLECTION).updateOne({'products.item':objectId(proId)},
+                db.get().collection(collection.CART_COLLECTION)
+                .updateOne({user:objectId(userId),'products.item':objectId(proId)},
                 {
                   $inc:{'products.$.quantity':1}
                 }
@@ -113,10 +115,14 @@ module.exports={
               foreignField:'_id',
               as:'product'
             }
+          },
+          {
+            $project:{
+              item:1,quantity:1,product:{$arrayElemAt:['$product',0]}
+            }
           }
           ]).toArray()
-          console.log("cartitems");
-          console.log(cartItems);
+          
           resolve(cartItems)
           
         })
@@ -130,6 +136,41 @@ module.exports={
             count=cart.products.length
           }
           resolve(count)
+        })
+      },
+
+      changeProductQuantity:(details)=>{
+        count = parseInt(details.count)
+        details.quantity = parseInt(details.quantity)
+
+
+        return new Promise((resolve,reject)=>{
+          if(details.count==-1 && details.quantity==1){
+            db.get().collection(collection.CART_COLLECTION)
+            .updateOne({_id:objectId(details.cart)},
+              {
+                $pull:{products:{item:objectId(details.product)}}
+              }
+            ).then((response)=>{
+              resolve({removeProduct:true})
+            })
+
+
+
+
+
+
+          }else{
+            db.get().collection(collection.CART_COLLECTION)
+            .updateOne({_id:objectId(details.cart),'products.item':objectId(details.product)},
+                  {
+                    $inc:{'products.$.quantity':count}
+                  }
+                  ).then((response)=>{
+                    resolve(true)
+                  })
+
+          }
         })
       }
     
